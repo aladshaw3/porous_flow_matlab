@@ -17,11 +17,7 @@ assert( abs(rho-1.046040050086146e+03) < 1e-6)
 
 % Calculation of wall heat transfer coefficient [W/m^2/K]
 hw = obj.WallHeatTransferWater();
-assert( abs(hw-3.972671616010085e+02) < 1e-6)
-
-% Calculation of solids heat transfer coefficient [W/m^2/K]
-hc = obj.SolidsHeatTransferWater();
-assert( abs(hc-7.009490739103333) < 1e-6)
+assert( abs(hw-3.608516299511982e+02) < 1e-6)
 
 % Calculation of the thermal conductivity of water [W/m/k]
 Kw = obj.ThermalConductivityWater();

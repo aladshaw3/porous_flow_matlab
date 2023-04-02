@@ -1,16 +1,19 @@
-%% Equation set (for reference, not same equations)
-% εb ∂Cb,i/∂t + εb v ∂Cb,i/∂z = -(1-εb) Ga km,i (Cb,i - Ci)
-% 
-% εw (1-εb) dCi/dt = (1-εb) Ga km,i (Cb,i - Ci) + f ∑∀j (uCi,j rj)
-% 
-% * dqi/dt = ∑∀j (uqi,j rj)
-% 
-% ** Smax,i = Si + ∑∀qj (usi,j qj)
-% 
-% εb ρ cpg ∂T/∂t + εb ρ cpg v ∂T/∂z = -(1-εb) Ga hc (T - Tc) [ - εb α hwg (T - Tw) ]
-% 
-% (1-εb) ρc cpc ∂Tc/∂t = (1-εb) Kc ∂2Tc/∂z2 + (1-εb) Ga hc (T - Tc) [ - (1-εb) α hwc (Tc - Tw) ] + [f/1000] ∑∀j ((-ΔHrxnj) dj rj)
-% 
+%% Equation set
+%
+% Conservation of Momentum
+%   d/dx( K * dP/dx ) = 0       v = - K * grad(P)
+%
+% Conservation of Mass
+%   dCi/dt - d/dx ( Deff * dCi/dx ) = - v*dCi/dx + [aqu. rxn (mol/m^3/s)] 
+%           + (1-eb)/eb*rhos*[surf. rxn (mol/kg/s)] 
+%
+%   dqi/dt = [surf. rxn (mol/kg/s)]
+%
+% Conservation of Energy
+%   dT/dt - d/dx( (eb*Kw + (1-eb)*Ks)/(eb*rho*cpw + (1-eb)*rhos*cps) * dT/dx ) 
+%           - eb*rho*cpw/(eb*rho*cpw + (1-eb)*rhos*cps)*v*dT/dx 
+%           + eb/(eb*rho*cpw + (1-eb)*rhos*cps)*(-dHr)*[aqu. rxn (mol/m^3/s)] 
+%           + (1-eb)/(eb*rho*cpw + (1-eb)*rhos*cps)*rhos*(-dHr)*[surf. rxn (mol/kg/s)] 
 
 % Mesh and Geometry files 
 % https://www.mathworks.com/help/pde/geometry-and-mesh.html
@@ -49,14 +52,14 @@ classdef porous_flow_2D < handle
     methods (Access = public)
 
         %% Constructor
-        function obj = porous_flow_2D(N)
+        function obj = porous_flow_2D(Na, Ns)
             % Validate the inputs
             arguments
-                N (1,1) {mustBePositive} = 1
+                Na (1,1) {mustBePositive} = 1
+                Ns (1,1) {mustBeNonnegative} = 0
             end
             % Set defaults 
-            obj.bulk_porosity = 0.5;
-            obj.particle_porosity = 0.3;
+            obj.bulk_porosity = 0.5;        % -
             obj.particle_diameter = 5e-3;   % m
             obj.muA = 0.02939/1000;         % kg/m/s
             obj.muB = 507.88;               % K
@@ -73,14 +76,14 @@ classdef porous_flow_2D < handle
             obj.cpC = 5591.8143667457;      % -
             obj.KwA = 0.001187275697628;    % K^-1
             obj.KwB = 0.247611225358853;    % - 
-            obj.char_len = 1;               % m
-            obj.bulk_solids_dens = 1600;    % kg/m^3
-            obj.bulk_solids_Cp = 935;       % J/kg/K
-            obj.bulk_solids_cond = 3.63;    % J/m/K/s
+            obj.char_len = 5e-3;            % m
+            obj.bulk_solids_dens = 2600;    % kg/m^3
+            obj.bulk_solids_Cp = 1.315e3;   % J/kg/K
+            obj.bulk_solids_cond = 1.04;    % J/m/K/s
 
             % These can be different for each chemical 
-            obj.refDiff = ones(N,1)*2.296E-5/100^2;   % m^2/s
-            obj.refDiffTemp = ones(N,1)*298.15;       % K
+            obj.refDiff = ones(Na,1)*2.296E-5/100^2;   % m^2/s
+            obj.refDiffTemp = ones(Na,1)*298.15;       % K
         end
 
         %% Surface to volume ratio for spheres
@@ -130,7 +133,7 @@ classdef porous_flow_2D < handle
                 obj
                 pressure {mustBeNumeric} = 101350  
                 temperature {mustBeNumeric} = 298
-                ux {mustBeNumeric} = 1
+                ux {mustBeNumeric} = 0
                 uy {mustBeNumeric} = 0
                 uz {mustBeNumeric} = 0
             end
@@ -141,39 +144,8 @@ classdef porous_flow_2D < handle
             umag = sqrt(ux.^2 + uy.^2 + uz.^2);
             Re = rho.*umag*obj.char_len./mu;
             Pr = cp.*mu./Kw;
-            Nu = 0.332*Re.^(1/2).*Pr.^(1/3);
+            Nu = 3 + 0.332*Re.^(1/2).*Pr.^(1/3);
             h = Nu.*Kw/obj.char_len;
-        end
-
-        %% Solids heat transfer coefficient for water (J/m^2/K/s)
-        %
-        %       Nu = 2 + 0.4 * Re_D^(1/2)*Pr^(1/3)
-        %
-        %               Nu = h*dia/Kw --> h=Nu*Kw/dia
-        %               Pr = cp*mu/Kw
-        %               Re = rho*u_mag*dia/mu
-        %
-        %   @param pressure in Pa
-        %   @param temperature in K
-        function h = SolidsHeatTransferWater(obj, pressure, temperature, ux, uy, uz)
-            % Validate the inputs
-            arguments
-                obj
-                pressure {mustBeNumeric} = 101350  
-                temperature {mustBeNumeric} = 298
-                ux {mustBeNumeric} = 1
-                uy {mustBeNumeric} = 0
-                uz {mustBeNumeric} = 0
-            end
-            rho = obj.DensityWater(pressure,temperature);
-            mu = obj.ViscosityWater(temperature);
-            Kw = obj.ThermalConductivityWater(temperature);
-            cp = obj.SpecificHeatWater(temperature);
-            umag = sqrt(ux.^2 + uy.^2 + uz.^2);
-            Re = rho.*umag*obj.particle_diameter./mu;
-            Pr = cp.*mu./Kw;
-            Nu = 2 + 0.4*Re.^(1/2).*Pr.^(1/3);
-            h = Nu.*Kw/obj.particle_diameter/1000;
         end
         
         %% Thermal conductivity function of water (in J/m/K/s)
@@ -255,6 +227,7 @@ classdef porous_flow_2D < handle
             vis = obj.ViscosityWater(temperature);
             K = (obj.particle_diameter^2*obj.bulk_porosity^3/obj.KozenyCarmannConst/(1-obj.bulk_porosity)^2)./vis;
         end
+
     end
 end
 
