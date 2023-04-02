@@ -3,9 +3,6 @@
 %% Test 1 - Basic calculations with default options
 obj = porous_flow_2D();
 
-% Calculation of surface-to-volume ratio (Ga) [m^-1]
-Ga = obj.SphericalSurfaceVolumeRatio();
-assert( abs(Ga-1200) < 1e-6)
 
 % Calculation of Viscosity (mu) [kg/m/s]
 mu = obj.ViscosityWater();
@@ -42,4 +39,8 @@ assert( abs(Deff-1.618066951388393e-09) < 1e-6)
 % Calculation of Kozeny-Carmann coefficient [m^3*s/kg]
 K = obj.KozenyCarmannDarcyCoeffient();
 assert( abs(K-0.002518249786618) < 1e-6)
+
+% Calculation of time-coefficient
+coeff = obj.TempTimeCoeff();
+assert( abs(coeff-3.899448335595932e+06) < 1e-6)
 

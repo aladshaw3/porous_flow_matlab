@@ -3,17 +3,14 @@
 % Conservation of Momentum
 %   d/dx( K * dP/dx ) = 0       v = - K * grad(P)
 %
-% Conservation of Mass
-%   dCi/dt - d/dx ( Deff * dCi/dx ) = - v*dCi/dx + [aqu. rxn (mol/m^3/s)] 
-%           + (1-eb)/eb*rhos*[surf. rxn (mol/kg/s)] 
-%
-%   dqi/dt = [surf. rxn (mol/kg/s)]
-%
 % Conservation of Energy
 %   dT/dt - d/dx( (eb*Kw + (1-eb)*Ks)/(eb*rho*cpw + (1-eb)*rhos*cps) * dT/dx ) 
 %           - eb*rho*cpw/(eb*rho*cpw + (1-eb)*rhos*cps)*v*dT/dx 
-%           + eb/(eb*rho*cpw + (1-eb)*rhos*cps)*(-dHr)*[aqu. rxn (mol/m^3/s)] 
-%           + (1-eb)/(eb*rho*cpw + (1-eb)*rhos*cps)*rhos*(-dHr)*[surf. rxn (mol/kg/s)] 
+%           + eb/(eb*rho*cpw + (1-eb)*rhos*cps)*(-dHr)*[rxn (mol/m^3/s)] 
+%
+% Conservation of Mass
+%   dCi/dt - d/dx ( m*Deff * dCi/dx ) = - m*v*dCi/dx + [rxn (mol/m^3/s)] 
+%
 
 % Mesh and Geometry files 
 % https://www.mathworks.com/help/pde/geometry-and-mesh.html
@@ -46,17 +43,23 @@ classdef porous_flow_2D < handle
         bulk_solids_dens      % Bulk solids density in the domain in kg/m^3
         bulk_solids_Cp        % Bulk solids heat capacity in J/kg/K
         bulk_solids_cond      % Bulk solids thermal conductivity in J/m/K/s
+
+        mobile_spec_idx       % Matrix of 1s and 0s (where 1 indicates the species is mobile)
+        rxn_stoich            % Stoichiometry matrix
+        rxn_powers            % Matrix for reaction power terms
+        rxn_rate_const        % Matrix for reaction rate constants (units will vary)
+        rxn_act_energy        % Matrix for reaction rate activation energies (J/mol)
     end
     
     %% Public methods
     methods (Access = public)
 
         %% Constructor
-        function obj = porous_flow_2D(Na, Ns)
+        function obj = porous_flow_2D(N, Rxns)
             % Validate the inputs
             arguments
-                Na (1,1) {mustBePositive} = 1
-                Ns (1,1) {mustBeNonnegative} = 0
+                N (1,1) {mustBePositive} = 1
+                Rxns (1,1) {mustBeNonnegative} = 0
             end
             % Set defaults 
             obj.bulk_porosity = 0.5;        % -
@@ -82,14 +85,17 @@ classdef porous_flow_2D < handle
             obj.bulk_solids_cond = 1.04;    % J/m/K/s
 
             % These can be different for each chemical 
-            obj.refDiff = ones(Na,1)*2.296E-5/100^2;   % m^2/s
-            obj.refDiffTemp = ones(Na,1)*298.15;       % K
+            obj.refDiff = ones(N,1)*2.296E-5/100^2;   % m^2/s
+            obj.refDiffTemp = ones(N,1)*298.15;       % K
+
+            % Setup space for reactions
+            obj.mobile_spec_idx = ones(N,1);
+            obj.rxn_stoich = zeros(N,Rxns);
+            obj.rxn_powers = zeros(N,Rxns);
+            obj.rxn_rate_const = zeros(1,Rxns);
+            obj.rxn_act_energy = zeros(1,Rxns);
         end
 
-        %% Surface to volume ratio for spheres
-        function Ga = SphericalSurfaceVolumeRatio(obj)
-            Ga = 6/obj.particle_diameter;
-        end
         
         %% Viscosity function of water
         %   @param temperature in K
@@ -226,6 +232,21 @@ classdef porous_flow_2D < handle
             end
             vis = obj.ViscosityWater(temperature);
             K = (obj.particle_diameter^2*obj.bulk_porosity^3/obj.KozenyCarmannConst/(1-obj.bulk_porosity)^2)./vis;
+        end
+
+
+        %% Calculation of temperature time coefficient
+        %   (eb*rho*cpw + (1-eb)*rhos*cps)
+        function coeff = TempTimeCoeff(obj, pressure, temperature)
+            % Validate the inputs
+            arguments
+                obj
+                pressure    {mustBeNumeric} = 101350
+                temperature {mustBeNumeric} = 298
+            end
+            rho = obj.DensityWater(pressure,temperature);
+            cpw = obj.SpecificHeatWater(temperature);
+            coeff = obj.bulk_porosity*rho.*cpw + (1-obj.bulk_porosity)*obj.bulk_solids_dens*obj.bulk_solids_Cp;
         end
 
     end
