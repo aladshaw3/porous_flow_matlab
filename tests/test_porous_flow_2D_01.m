@@ -20,6 +20,10 @@ assert( abs(hw-3.608516299511982e+02) < 1e-6)
 Kw = obj.ThermalConductivityWater();
 assert( abs(Kw-0.601419383251997) < 1e-6)
 
+% Calculation of the effective thermal conductivity of water [W/m/k]
+Kew = obj.EffectiveThermalConductivityWater(101350, 298, 0.1);
+assert( abs(Kew-9.36121272563573) < 1e-6)
+
 % Calculation of specific heat of water [J/kg/K]
 cpw = obj.SpecificHeatWater();
 assert( abs(cpw-4.187121392561558e+03) < 1e-6)
@@ -80,7 +84,7 @@ he = [0 0 0;
      0 1 0; 
      0 0 1];
 
-re = [0;298;1];
+re = [0;300;1];
 
 qe = [0 0 0; 
      0 0 0; 
@@ -134,12 +138,36 @@ u = results.NodalSolution;
 
 f1 = figure;
 pdeplot(obj.model,"XYData", u(:,1,end),"ZData",u(:,1,end) ,Mesh="on", ColorMap="jet")
+saveas(f1,'output/Gifs/pressure_test01.png');
 close(f1);
 
-f2 = figure;
-pdeplot(obj.model,"XYData", u(:,2,end),"ZData",u(:,2,end) ,Mesh="on", ColorMap="jet")
-close(f2);
+% Create gif for temperature
+first_command = 'pdeplot(model,"XYData",u(:,2,INDEX),"ZData",u(:,2,INDEX),"ZStyle","continuous",ColorMap="jet");';
+command_set = [first_command,'umax = max(max(u(:,2,:)));','umin = min(min(u(:,2,:)));',...
+                'axis([0 4 0 4 umin umax]);','clim([umin umax]);',...
+                'xlabel x;','ylabel y;','zlabel T;'];
 
-f3 = figure;
-pdeplot(obj.model,"XYData", u(:,3,end),"ZData",u(:,3,end) ,Mesh="on", ColorMap="jet")
-close(f3);
+variable_set = cell(2,2);
+variable_set{1,1} = 'u';
+variable_set{1,2} = u;
+variable_set{2,1} = 'model';
+variable_set{2,2} = obj.model;
+
+index_limit = nsteps;
+output2 = create_gif(command_set,variable_set,index_limit,1,'temp_solution_test01');
+
+
+% Create gif for concentration 
+first_command = 'pdeplot(model,"XYData",u(:,3,INDEX),"ZData",u(:,3,INDEX),"ZStyle","continuous",ColorMap="jet");';
+command_set = [first_command,'umax = max(max(u(:,3,:)));','umin = min(min(u(:,3,:)));',...
+                'axis([0 4 0 4 umin umax]);','clim([umin umax]);',...
+                'xlabel x;','ylabel y;','zlabel C;'];
+
+variable_set = cell(2,2);
+variable_set{1,1} = 'u';
+variable_set{1,2} = u;
+variable_set{2,1} = 'model';
+variable_set{2,2} = obj.model;
+
+index_limit = nsteps;
+output3 = create_gif(command_set,variable_set,index_limit,1,'conc_solution_test01');

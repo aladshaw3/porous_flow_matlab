@@ -86,7 +86,7 @@ classdef porous_flow_2D < handle
             obj.char_len = ones(1,1,subdomains)*5e-3;            % m
             obj.bulk_solids_dens = ones(1,1,subdomains)*2600;    % kg/m^3
             obj.bulk_solids_Cp = ones(1,1,subdomains)*1.315e3;   % J/kg/K
-            obj.bulk_solids_cond = ones(1,1,subdomains)*1.04;    % J/m/K/s
+            obj.bulk_solids_cond = ones(1,1,subdomains)*3.04;    % J/m/K/s
 
             % These can be different for each chemical 
             obj.refDiff = ones(N,1,subdomains)*2.296E-5/100^2;   % m^2/s
@@ -179,6 +179,25 @@ classdef porous_flow_2D < handle
                 sub {mustBePositive} = 1
             end
             Kw = obj.KwA(1,1,sub)*temperature + obj.KwB(1,1,sub);
+        end
+
+        %% Effective Thermal conductivity function of water (in J/m/K/s)
+        %   @param temperature in K
+        function Kw = EffectiveThermalConductivityWater(obj, pressure, temperature, ux, uy, uz, sub)
+            % Validate the inputs
+            arguments
+                obj
+                pressure {mustBeNumeric} = 101350 
+                temperature {mustBeNumeric} = 298
+                ux {mustBeNumeric} = 0
+                uy {mustBeNumeric} = 0
+                uz {mustBeNumeric} = 0
+                sub {mustBePositive} = 1
+            end
+            umag = sqrt(ux.^2 + uy.^2 + uz.^2);
+            Kw = obj.ThermalConductivityWater(temperature,sub) + ...
+                obj.DensityWater(pressure, temperature, sub) .* ...
+                    obj.SpecificHeatWater(temperature, sub) .* umag.*obj.alpha(1,1,sub)/500;
         end
         
         %% Specific heat (Cp) function of water (in J/kg/K)
@@ -293,10 +312,14 @@ classdef porous_flow_2D < handle
             Nv = (2+size(obj.mobile_spec_idx,1))*2;   % Variables (2N form)
             Nl = numel(location.x);               % Locations
             cmatrix = zeros(Nv,Nl);
-            cmatrix(1,:) = obj.KozenyCarmannDarcyCoeffient(state.u(2,:),sub);  % pressure
+            K = obj.KozenyCarmannDarcyCoeffient(state.u(2,:),sub);
+            cmatrix(1,:) = K;  % pressure
             cmatrix(2,:) = cmatrix(1,:);  % pressure
 
-            cmatrix(3,:) = (obj.bulk_porosity(1,1,sub)*obj.ThermalConductivityWater(state.u(2,:),sub) + ...
+            vx = - K .* state.ux(1,:); % vel_x
+            vy = - K .* state.uy(1,:); % vel_y
+
+            cmatrix(3,:) = (obj.bulk_porosity(1,1,sub)*obj.EffectiveThermalConductivityWater(state.u(1,:),state.u(2,:),vx,vy,0,sub) + ...
                 (1-obj.bulk_porosity(1,1,sub)*obj.bulk_solids_cond(1,1,sub))) ... 
                 ./obj.TempTimeCoeff(state.u(1,:),state.u(2,:),sub);  % temperature
             cmatrix(4,:) = cmatrix(3,:);  % temperature
@@ -304,9 +327,7 @@ classdef porous_flow_2D < handle
             j=1;
             for i=5:2:Nv
                 cmatrix(i,:) = obj.EffectiveDispersionWater(j,state.u(2,:),...
-                        -obj.KozenyCarmannDarcyCoeffient(state.u(2,:),sub).*state.ux(1,:),...
-                        -obj.KozenyCarmannDarcyCoeffient(state.u(2,:),sub).*state.uy(1,:),0,sub) * ...
-                        obj.mobile_spec_idx(j,1,sub); % concentration 
+                        vx,vy,0,sub) * obj.mobile_spec_idx(j,1,sub); % concentration 
                 cmatrix(i+1,:) = cmatrix(i,:); % concentration 
                 j=j+1;
             end
