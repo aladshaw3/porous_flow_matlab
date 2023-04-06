@@ -77,7 +77,7 @@ classdef porous_flow_2D < handle
             obj.rhoRef = ones(1,1,subdomains)*1000;              % kg/m^3
             obj.KozenyCarmannConst = ones(1,1,subdomains)*5.55;  % - 
             obj.diff_factor = ones(1,1,subdomains)*0.5;          % -
-            obj.alpha = ones(1,1,subdomains)*0.01;               % m
+            obj.alpha = ones(1,1,subdomains)*1;                  % m
             obj.cpA = ones(1,1,subdomains)*0.01356461398877;     % K^-2
             obj.cpB = ones(1,1,subdomains)*-8.75598978135192;    % K^-1
             obj.cpC = ones(1,1,subdomains)*5591.8143667457;      % -
@@ -101,6 +101,17 @@ classdef porous_flow_2D < handle
             obj.rxn_enthalpy = zeros(1,Rxns,subdomains);
 
             obj.model = createpde(N+2);
+
+            % Default solver configs
+            obj.model.SolverOptions.ReportStatistics = 'on';
+            obj.model.SolverOptions.AbsoluteTolerance = 1e-4; % ODE opt
+            obj.model.SolverOptions.RelativeTolerance = 1e-4; % ODE opt
+            obj.model.SolverOptions.ResidualTolerance = 1e-6; % Nonlinear opt
+            obj.model.SolverOptions.MaxIterations = 30;       % Nonlinear opt
+            obj.model.SolverOptions.MinStep = 0.001;          % Min step size 
+            obj.model.SolverOptions.ResidualNorm = 2;         % L-2 norm
+            obj.model.SolverOptions.MaxShift = 500;           % Lanczos solver shift
+            obj.model.SolverOptions.BlockSize = 50;           % Block size for Lanczos recurrence
         end
 
         %% Function to set model geometry from edges
@@ -197,7 +208,7 @@ classdef porous_flow_2D < handle
             umag = sqrt(ux.^2 + uy.^2 + uz.^2);
             Kw = obj.ThermalConductivityWater(temperature,sub) + ...
                 obj.DensityWater(pressure, temperature, sub) .* ...
-                    obj.SpecificHeatWater(temperature, sub) .* umag.*obj.alpha(1,1,sub)/500;
+                    obj.SpecificHeatWater(temperature, sub) .* umag.*obj.alpha(1,1,sub)/50;
         end
         
         %% Specific heat (Cp) function of water (in J/kg/K)
@@ -240,7 +251,7 @@ classdef porous_flow_2D < handle
                 sub {mustBePositive} = 1
             end
             umag = sqrt(ux.^2 + uy.^2 + uz.^2);
-            D = obj.DiffusionWater(varID, temperature, sub) + umag*obj.alpha(1,1,sub);
+            D = obj.DiffusionWater(varID, temperature, sub) + umag*obj.alpha(1,1,sub)/50;
         end
         
         %% Effective Dispersivity function in water
@@ -331,6 +342,48 @@ classdef porous_flow_2D < handle
                 cmatrix(i+1,:) = cmatrix(i,:); % concentration 
                 j=j+1;
             end
+
+        end
+
+        %% Function for f_coeff in PDE toolbox
+        function fmatrix = f_coeff_fun(obj, sub, location, state)
+            Nv = 2+size(obj.mobile_spec_idx,1);   % Variables
+            Nl = numel(location.x);               % Locations
+            fmatrix = zeros(Nv,Nl);
+            fmatrix(1,:) = 0;  % pressure
+
+            K = obj.KozenyCarmannDarcyCoeffient(state.u(2,:),sub);
+            vx = - K .* state.ux(1,:); % vel_x
+            vy = - K .* state.uy(1,:); % vel_y
+
+            % coeffs
+            denom = obj.TempTimeCoeff(state.u(1,:),state.u(2,:),sub);
+            rho = obj.DensityWater(state.u(1,:),state.u(2,:),sub);
+            cpw = obj.SpecificHeatWater(state.u(2,:),sub);
+            Tx = obj.bulk_porosity(1,1,sub)*rho.*cpw ./ denom .* vx;
+            Ty = obj.bulk_porosity(1,1,sub)*rho.*cpw ./ denom .* vy;
+
+            % rxns
+            rxns = obj.r_coeff_fun(sub, location, state);
+
+            fmatrix(2,:) = -(Tx .* state.ux(2,:) + Ty .* state.uy(2,:)) + ...
+                            obj.bulk_porosity(1,1,sub)*rxns(1,:)./denom;  % temperature
+
+            j=1;
+            for i=3:Nv
+                fmatrix(i,:) = -obj.mobile_spec_idx(j,1,sub) * ... 
+                                (vx .* state.ux(i,:) + vy .* state.uy(i,:)) + ...
+                                    rxns(2,:); % concentration 
+                j=j+1;
+            end
+        end
+
+        %% Function for reactions in PDE toolbox
+        function rmatrix = r_coeff_fun(obj, sub, location, state)
+            Nl = numel(location.x);               % Locations
+            rmatrix = zeros(2,Nl);
+            rmatrix(1,:) = 0;  % placeholder (temperature) [sum all]
+            rmatrix(2,:) = 0;  % placeholder (concentration) [sum all that contribute to given species...]
         end
 
     end
