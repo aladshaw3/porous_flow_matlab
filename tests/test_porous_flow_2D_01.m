@@ -138,7 +138,7 @@ u = results.NodalSolution;
 
 f1 = figure;
 pdeplot(obj.model,"XYData", u(:,1,end),"ZData",u(:,1,end) ,Mesh="on", ColorMap="jet")
-saveas(f1,'output/Gifs/pressure_test01.png');
+% saveas(f1,'output/Gifs/pressure_test01.png');
 close(f1);
 
 % Create gif for temperature
