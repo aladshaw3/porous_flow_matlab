@@ -96,9 +96,9 @@ classdef porous_flow_2D < handle
             obj.mobile_spec_idx = ones(N,1,subdomains);
             obj.rxn_stoich = zeros(N,Rxns,subdomains);
             obj.rxn_powers = zeros(N,Rxns,subdomains);
-            obj.rxn_rate_const = zeros(1,Rxns,subdomains);
-            obj.rxn_act_energy = zeros(1,Rxns,subdomains);
-            obj.rxn_enthalpy = zeros(1,Rxns,subdomains);
+            obj.rxn_rate_const = zeros(Rxns,subdomains);
+            obj.rxn_act_energy = zeros(Rxns,subdomains);
+            obj.rxn_enthalpy = zeros(Rxns,subdomains);
 
             obj.model = createpde(N+2);
 
@@ -373,7 +373,7 @@ classdef porous_flow_2D < handle
             for i=3:Nv
                 fmatrix(i,:) = -obj.mobile_spec_idx(j,1,sub) * ... 
                                 (vx .* state.ux(i,:) + vy .* state.uy(i,:)) + ...
-                                    rxns(2,:); % concentration 
+                                    rxns(1+j,:); % concentration 
                 j=j+1;
             end
         end
@@ -381,9 +381,30 @@ classdef porous_flow_2D < handle
         %% Function for reactions in PDE toolbox
         function rmatrix = r_coeff_fun(obj, sub, location, state)
             Nl = numel(location.x);               % Locations
-            rmatrix = zeros(2,Nl);
+            N = size(obj.mobile_spec_idx,1);
+            R = size(obj.rxn_stoich,2);
+
+            rmatrix = zeros(1+N,Nl);
+            rmat = zeros(R,Nl);
+            %obj.rxn_stoich = zeros(N,Rxns,subdomains);
+            %obj.rxn_powers = zeros(N,Rxns,subdomains);
+            %obj.rxn_rate_const = zeros(Rxns,subdomains);
+            %obj.rxn_act_energy = zeros(Rxns,subdomains);
+            kval = obj.rxn_rate_const(:,sub) .* exp(-obj.rxn_act_energy(:,sub) * (1./(8.314459 .*state.u(2,:))) );
+            for i=1:R
+                rmat(i,:) = prod( state.u(3:(N+2),:) .^ obj.rxn_powers(:,i,sub) , 1 );
+            end
+            rmat = kval .* rmat;
+            %kval = obj.rxn_rate_const(:,sub) .* kval(:,:)
+            %rmat = obj.rxn_rate_const(:,sub) .* prod( state.u(3:(N+2),:) .^ obj.rxn_stoich(:,:,sub) , 1 ) ;
+            % disp('start')
+            % size(kval)
+            % size(rmat)
+            % disp('end')
             rmatrix(1,:) = 0;  % placeholder (temperature) [sum all]
-            rmatrix(2,:) = 0;  % placeholder (concentration) [sum all that contribute to given species...]
+            for i=1:N
+                rmatrix(1+i,:) = obj.rxn_stoich(i,:,sub) * rmat;  % placeholder (concentration) [sum all that contribute to given species...]
+            end
         end
 
     end

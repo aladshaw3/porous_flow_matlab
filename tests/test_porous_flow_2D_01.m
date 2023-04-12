@@ -62,7 +62,21 @@ geom = R1;
 % E1 - bottom, E2 - right, E3 - top, E4 - left
 g = decsg(geom);
 
-obj = porous_flow_2D();
+obj = porous_flow_2D(1, 1, 1);
+
+% Set rxn info manually
+% obj.mobile_spec_idx = ones(N,1,subdomains);
+% obj.rxn_stoich = zeros(N,Rxns,subdomains);
+% obj.rxn_powers = zeros(N,Rxns,subdomains);
+% obj.rxn_rate_const = zeros(Rxns,subdomains);
+% obj.rxn_act_energy = zeros(Rxns,subdomains);
+% obj.rxn_enthalpy = zeros(Rxns,subdomains);
+
+obj.rxn_stoich(1,1,1) = -0.01;
+obj.rxn_act_energy(1,1) = 0;
+obj.rxn_rate_const(1,1) = 1;
+obj.rxn_powers(1,1,1) = 1;
+
 
 obj.set_geometry_from_edges(g);
 
