@@ -22,4 +22,12 @@ $$ \vec{v} = -K \cdot \nabla{P} $$
 
  - Thermal energy balance
 
-$$ (\varepsilon \rho c_{pw} + (1- \varepsilon) \rho_{s} c_{ps}) \frac{\partial T}{\partial t} - \nabla{ (\varepsilon K_w + (1- \varepsilon) K_s) \nabla{T} } = - (\varepsilon \rho c_{pw}) \vec{v} \cdot \nabla{T} + \varepsilon \sum{\Delta H_j \cdot r_j }$$
+$$ (\varepsilon \rho c_{pw} + (1- \varepsilon) \rho_{s} c_{ps}) \frac{\partial T}{\partial t} - \nabla{ ( (\varepsilon K_w + (1- \varepsilon) K_s ) \cdot \nabla{T} ) } = - (\varepsilon \rho c_{pw}) \vec{v} \cdot \nabla{T} + \varepsilon \sum{\Delta H_j \cdot r_j } $$
+
+ - Mass balances (for each species)
+
+$$ \varepsilon \frac{\partial C_i}{\partial t} - \nabla{ ( D_i \cdot \nabla{C_i} ) } = - \varepsilon \vec{v} \cdot \nabla{C_i} + \varepsilon \sum{u_j \cdot r_j }$$
+
+ - Reaction term
+
+$$ r_j = k_j \cdot exp( - \frac{E_j}{R T} ) \cdot \prod{C_i^{s_i}} $$
