@@ -23,4 +23,5 @@ $$ \vec{v} = -K \cdot \nabla{P} $$
  - Thermal energy balance
 
 &epsilon;<sub>b</sub> &rho; c<sub>pg</sub> 
+
 $$ \frac{\partial^2 T}{\partial t^2} $$
