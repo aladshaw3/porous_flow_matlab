@@ -22,4 +22,4 @@ $$ \vec{v} = -K \cdot \nabla{P} $$
 
  - Thermal energy balance
 
-$$ (\varepsilon \rho c_{pw} + (1- \varepsilon) \rho_{s} c_{ps}) \frac{\partial^2 T}{\partial t^2} $$
+$$ (\varepsilon \rho c_{pw} + (1- \varepsilon) \rho_{s} c_{ps}) \frac{\partial T}{\partial t} - \nabla{ (\varepsilon K_w + (1- \varepsilon) K_s) \nabla{T} } = - (\varepsilon \rho c_{pw}) \vec{v} \cdot \nabla{T} + \varepsilon \sum{\Delta H_j \cdot r_j }$$
