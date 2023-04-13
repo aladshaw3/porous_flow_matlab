@@ -1,6 +1,11 @@
 [![Checks](https://github.com/aladshaw3/porous_flow_matlab/actions/workflows/unit_tests.yml/badge.svg)](https://github.com/aladshaw3/porous_flow_matlab/actions/workflows/unit_tests.yml)
 [![codecov](https://codecov.io/gh/aladshaw3/porous_flow_matlab/branch/main/graph/badge.svg)](https://codecov.io/gh/aladshaw3/porous_flow_matlab) 
 
+[![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=aladshaw3/porous_flow_matlab)
+
+## WIP: Use with Caution ##
+
+
 # Porous Flow in MATLAB
 This repository provides a MATLAB interface for solving 2D PDEs resulting 
 from reactive water flow through a porous media. The physics include:
@@ -10,6 +15,11 @@ from reactive water flow through a porous media. The physics include:
  - Thermal balance of the fluid phase 
 
  - Mass balance for chemicals in the fluid phase
+
+# Requirements
+
+ - MATLAB
+ - [PDE Toolbox](https://www.mathworks.com/help/pde/)
 
 
 # Equation Set
@@ -30,4 +40,10 @@ $$ \varepsilon \frac{\partial C_i}{\partial t} - \nabla{ ( D_i \cdot \nabla{C_i}
 
  - Reaction term
 
-$$ r_j = k_j \cdot exp( - \frac{E_j}{R T} ) \cdot \prod{C_i^{s_i}} $$
+$$ r_j = k_j \cdot exp( - \frac{E_j}{R T} ) \cdot \prod{C_l^{s_l}} $$
+
+# Citation 
+
+Ladshaw, A.P., "Porous Flow MATLAB: A simple 2D interface for modeling flow and reactions
+through porous media," https://github.com/aladshaw3/porous_flow_matlab, 
+Accessed (Month) (Day), (Year).
