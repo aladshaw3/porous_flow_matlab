@@ -11,6 +11,7 @@
 % Conservation of Mass
 %   dCi/dt - d/dx ( m*Deff * dCi/dx ) = - m*v*dCi/dx + [rxn (mol/m^3/s)] 
 %
+% % https://en.wikibooks.org/wiki/LaTeX/Mathematics
 
 % Mesh and Geometry files 
 % https://www.mathworks.com/help/pde/geometry-and-mesh.html
