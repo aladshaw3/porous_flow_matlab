@@ -16,4 +16,4 @@ from reactive water flow through a porous media. The physics include:
 
  - Pressure driven Darcy flow
 
-$$ \nabla{f} $$
+$$ \nabla{K \nabla{P} } $$
