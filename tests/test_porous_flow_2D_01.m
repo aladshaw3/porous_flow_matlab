@@ -62,7 +62,7 @@ geom = R1;
 % E1 - bottom, E2 - right, E3 - top, E4 - left
 g = decsg(geom);
 
-obj = porous_flow_2D(1, 1, 1);
+obj = porous_flow_2D(1, 2, 1);
 
 % Set rxn info manually
 % obj.mobile_spec_idx = ones(N,1,subdomains);
@@ -72,10 +72,17 @@ obj = porous_flow_2D(1, 1, 1);
 % obj.rxn_act_energy = zeros(Rxns,subdomains);
 % obj.rxn_enthalpy = zeros(Rxns,subdomains);
 
-obj.rxn_stoich(1,1,1) = -0.01;
-obj.rxn_act_energy(1,1) = 0;
-obj.rxn_rate_const(1,1) = 1;
+obj.rxn_stoich(1,1,1) = -1;
+obj.rxn_act_energy(1,1) = 50000;
+obj.rxn_rate_const(1,1) = 5e6;
 obj.rxn_powers(1,1,1) = 1;
+obj.rxn_enthalpy(1,1) = -1e7;
+
+obj.rxn_stoich(1,2,1) = -1;
+obj.rxn_act_energy(2,1) = 50000;
+obj.rxn_rate_const(2,1) = 5e6;
+obj.rxn_powers(1,2,1) = 1;
+obj.rxn_enthalpy(2,1) = -1e7;
 
 
 obj.set_geometry_from_edges(g);
@@ -85,7 +92,7 @@ cmat = @(location,state) obj.c_coeff_fun(1,location,state);
 fmat = @(location,state) obj.f_coeff_fun(1,location,state);
 
 % Specify what the model coefficients are
-specifyCoefficients(obj.model,"m",0,"d",dmat,"c",cmat,"a",0,"f",fmat);
+specifyCoefficients(obj.model,"m",0,"d",dmat,"c",cmat,"a",[0;0;0],"f",fmat);
 
 % BC Formats
 %
@@ -99,7 +106,7 @@ he = [0 0 0;
      0 1 0; 
      0 0 1];
 
-re = [0;300;1];
+re = [0;298;1];
 
 qe = [0 0 0; 
      0 0 0; 

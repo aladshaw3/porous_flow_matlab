@@ -378,7 +378,17 @@ classdef porous_flow_2D < handle
             end
         end
 
-        %% Function for reactions in PDE toolbox
+        %% Function for reactions 
+        %
+        %       This function calculates a reaction matrix rmat for all 
+        %       reactions, then uses rmat with rxn_stoich and rxn_enthalpy
+        %       to determine impact of reactions on mass and energy
+        %       balances in a given subdomain. 
+        %
+        %       NOTE: Each reaction is assumed irreversible. A reversible
+        %       reaction can be created as a sum/difference between two
+        %       different irreversible reactions. This formatting is just
+        %       simpler for Matlab to handle. 
         function rmatrix = r_coeff_fun(obj, sub, location, state)
             Nl = numel(location.x);               % Locations
             N = size(obj.mobile_spec_idx,1);
@@ -386,24 +396,18 @@ classdef porous_flow_2D < handle
 
             rmatrix = zeros(1+N,Nl);
             rmat = zeros(R,Nl);
-            %obj.rxn_stoich = zeros(N,Rxns,subdomains);
-            %obj.rxn_powers = zeros(N,Rxns,subdomains);
-            %obj.rxn_rate_const = zeros(Rxns,subdomains);
-            %obj.rxn_act_energy = zeros(Rxns,subdomains);
+
+            % kval = k * exp( -E/R/T)
             kval = obj.rxn_rate_const(:,sub) .* exp(-obj.rxn_act_energy(:,sub) * (1./(8.314459 .*state.u(2,:))) );
             for i=1:R
                 rmat(i,:) = prod( state.u(3:(N+2),:) .^ obj.rxn_powers(:,i,sub) , 1 );
             end
+            % rmat = kval * prod( C_i^s_i )
             rmat = kval .* rmat;
-            %kval = obj.rxn_rate_const(:,sub) .* kval(:,:)
-            %rmat = obj.rxn_rate_const(:,sub) .* prod( state.u(3:(N+2),:) .^ obj.rxn_stoich(:,:,sub) , 1 ) ;
-            % disp('start')
-            % size(kval)
-            % size(rmat)
-            % disp('end')
-            rmatrix(1,:) = 0;  % placeholder (temperature) [sum all]
+  
+            rmatrix(1,:) = -obj.rxn_enthalpy(:,sub)' * rmat;  
             for i=1:N
-                rmatrix(1+i,:) = obj.rxn_stoich(i,:,sub) * rmat;  % placeholder (concentration) [sum all that contribute to given species...]
+                rmatrix(1+i,:) = obj.rxn_stoich(i,:,sub) * rmat;
             end
         end
 
