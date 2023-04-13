@@ -36,11 +36,21 @@ $$ (\varepsilon \rho c_{pw} + (1- \varepsilon) \rho_{s} c_{ps}) \frac{\partial T
 
  - Mass balances (for each species)
 
-$$ \varepsilon \frac{\partial C_i}{\partial t} - \nabla{ ( D_i \cdot \nabla{C_i} ) } = - \varepsilon \vec{v} \cdot \nabla{C_i} + \varepsilon \sum{u_j \cdot r_j }$$
+$$ \varepsilon \frac{\partial C_i}{\partial t} - \nabla{ ( \delta_i \varepsilon D_i \cdot \nabla{C_i} ) } = - \delta_i \varepsilon \vec{v} \cdot \nabla{C_i} + \varepsilon \sum{u_j \cdot r_j }$$
 
  - Reaction term
 
 $$ r_j = k_j \cdot exp( - \frac{E_j}{R T} ) \cdot \prod{C_l^{s_l}} $$
+
+ - Mobility term
+
+If species is mobile...
+
+$$ \delta_i = 1 $$
+
+Otherwise...
+
+$$ \delta_i = 0 $$
 
 # Citation 
 
