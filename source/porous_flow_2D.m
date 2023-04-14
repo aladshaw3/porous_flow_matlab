@@ -116,8 +116,41 @@ classdef porous_flow_2D < handle
         end
 
         %% Function to set model geometry from edges
-        function [] = set_geometry_from_edges(obj, geo)
-            geometryFromEdges(obj.model,geo);
+        %
+        %       Calling this function will setup the geometry for the 2D
+        %       domain for the model. Users may formulate the geometry
+        %       information 'geo' from any other Matlab method.
+        %
+        %   @param geo Decomposed geometry matrix 
+        %            (https://www.mathworks.com/help/pde/ug/pde.pdemodel.geometryfromedges.html)
+        %
+        %   Returns: pg = returns formulated geometry to workspace
+        %               [optional]
+        function pg = set_geometry_from_edges(obj, geo)
+            pg = geometryFromEdges(obj.model,geo);
+        end
+
+        %% Function to set model coefficients based on region
+        %
+        %       Calling this function will set the coefficients for the
+        %       model according to the set of region IDs in the domain.
+        %       Before calling this method, make sure all parameters have
+        %       been setup appropriately.
+        %
+        %   Returns: CA = cell arrya of handles to coefficient assignment
+        function CA = set_coefficients(obj)
+            Nd = size(obj.bulk_porosity,3);
+            dmat = cell(Nd,1);
+            cmat = cell(Nd,1);
+            fmat = cell(Nd,1);
+            CA = cell(Nd,1);
+
+            for i=1:Nd
+                dmat{i,1} = @(location,state) obj.d_coeff_fun(i,location,state);
+                cmat{i,1} = @(location,state) obj.c_coeff_fun(i,location,state);
+                fmat{i,1} = @(location,state) obj.f_coeff_fun(i,location,state);
+                CA{i,1} = specifyCoefficients(obj.model,"m",0,"d",dmat{i,1},"c",cmat{i,1},"a",0,"f",fmat{i,1},"Face",i);
+            end
         end
 
         

@@ -87,12 +87,7 @@ obj.rxn_enthalpy(2,1) = -1e7;
 
 obj.set_geometry_from_edges(g);
 
-dmat = @(location,state) obj.d_coeff_fun(1,location,state);
-cmat = @(location,state) obj.c_coeff_fun(1,location,state);
-fmat = @(location,state) obj.f_coeff_fun(1,location,state);
-
-% Specify what the model coefficients are
-specifyCoefficients(obj.model,"m",0,"d",dmat,"c",cmat,"a",0,"f",fmat);
+obj.set_coefficients();
 
 % BC Formats
 %
