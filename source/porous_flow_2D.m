@@ -53,6 +53,8 @@ classdef porous_flow_2D < handle
         rxn_enthalpy          % Matrix for reaction enthalpies (J/mol)
 
         model                 % PDE model object 
+
+        boundaries            % Object to identify boundaries 
     end
     
     %% Public methods
@@ -113,6 +115,11 @@ classdef porous_flow_2D < handle
             obj.model.SolverOptions.ResidualNorm = 2;         % L-2 norm
             obj.model.SolverOptions.MaxShift = 500;           % Lanczos solver shift
             obj.model.SolverOptions.BlockSize = 50;           % Block size for Lanczos recurrence
+
+            obj.boundaries = struct("input", struct("ids",[], "velocity",[], ...
+                "temperature",[], "concentration",[]), ...
+                    "output",struct("ids",[], "pressure",[]), "walls", ...
+                        struct("ids",[], "temperature",[]));
         end
 
         %% Function to set model geometry from edges
@@ -128,6 +135,15 @@ classdef porous_flow_2D < handle
         %               [optional]
         function pg = set_geometry_from_edges(obj, geo)
             pg = geometryFromEdges(obj.model,geo);
+
+            % Name,Value options (look up for more info)
+            %-------------------
+            % "GeometricOrder","linear"
+            % "Hedge",{[1 2],0.01,3,0.05}
+            % "Hface",{[1 2],0.1,[3 4 5],0.05}
+            % "Hmin",0.05
+            % "Hmax",0.25
+            generateMesh(obj.model);
         end
 
         %% Function to set model coefficients based on region
@@ -151,6 +167,130 @@ classdef porous_flow_2D < handle
                 fmat{i,1} = @(location,state) obj.f_coeff_fun(i,location,state);
                 CA{i,1} = specifyCoefficients(obj.model,"m",0,"d",dmat{i,1},"c",cmat{i,1},"a",0,"f",fmat{i,1},"Face",i);
             end
+        end
+
+        %% Function to set input boundaries
+        %
+        %       Calling this function will set the input boundaries for
+        %       velocity, temperature, and all concentrations based on the
+        %       user provided information.
+        %
+        %   @param boundary_set Set of boundary IDs
+        %   @param velocity_set Set of velocity values at the IDs
+        %   @param temperature_set Set of temperatures at the IDs
+        %   @param concentration_matrix NxID matrix of concentrations for
+        %           each species at each boundary ID
+        function bc = set_input_boundaries(obj, boundary_set, velocity_set, ...
+                    temperature_set, concentration_matrix)
+            arguments
+                obj
+                boundary_set (1,:)
+                velocity_set (1,:)
+                temperature_set (1,:)
+                concentration_matrix (:,:)
+            end
+
+            N = size(obj.mobile_spec_idx,1);
+            IDs = size(boundary_set,2);
+            
+            ge = zeros(N+2,IDs);
+            qe = zeros(N+2,N+2,IDs);
+            re = zeros(N+2,IDs);
+            he = zeros(N+2,N+2,IDs);
+            
+            for i=1:IDs
+                ge(1,i) = velocity_set(i);
+                coeff = obj.bulk_porosity(1,1,1)*obj.DensityWater(101350,temperature_set(i),1)* ...
+                    obj.SpecificHeatWater(temperature_set(i),1)/obj.TempTimeCoeff(101350,temperature_set(i),1)*...
+                    velocity_set(i);
+                ge(2,i) = coeff*(temperature_set(i));
+                qe(2,2,i) = coeff;
+                for j=3:N+2
+                    ge(j,i) = velocity_set(i)*(concentration_matrix(j-2,i));
+                    qe(j,j,i) = velocity_set(i);
+                end
+                bc = applyBoundaryCondition(obj.model,"mixed", ...
+                                             "Edge",boundary_set(i), ...
+                                             "h",he(:,:,i),"r",re(:,i),"q",qe(:,:,i),"g",ge(:,i));
+            end
+        end
+
+
+        %% Function to set output boundaries
+        %
+        %       Calling this function will set the output boundaries for
+        %       pressure based on user inputs
+        %
+        %   @param boundary_set Set of boundary IDs
+        %   @param pressure_set Set of pressure values at the IDs
+        function bc = set_output_boundaries(obj, boundary_set, pressure_set)
+            arguments
+                obj
+                boundary_set (1,:)
+                pressure_set (1,:)
+            end
+            
+            N = size(obj.mobile_spec_idx,1);
+            IDs = size(boundary_set,2);
+            
+            ge = zeros(N+2,IDs);
+            qe = zeros(N+2,N+2,IDs);
+            re = zeros(N+2,IDs);
+            he = zeros(N+2,N+2,IDs);
+            
+            for i=1:IDs
+                he(1,1,i) = 1;
+                re(1,i) = pressure_set(i);
+                bc = applyBoundaryCondition(obj.model,"mixed", ...
+                                             "Edge",boundary_set(i), ...
+                                             "h",he(:,:,i),"r",re(:,i),"q",qe(:,:,i),"g",ge(:,i));
+            end
+        end
+
+
+        %% Function to set initial conditions
+        %
+        %       Calling this function will set the initial conditions for
+        %       all variables for a set of subdomain IDs
+        %
+        %   @param subdomain_set Set of subdomain IDs
+        %   @param pressure_set Set of pressure values at the IDs
+        %   @param temperature_set Set of temperatures at the IDs
+        %   @param concentration_matrix NxID matrix of concentrations for
+        %           each species at each subdomain ID   
+        function ic = set_initial_conditions(obj, subdomain_set, pressure_set, ...
+                temperature_set, concentration_matrix)
+            arguments
+                obj
+                subdomain_set (1,:)
+                pressure_set (1,:)
+                temperature_set (1,:)
+                concentration_matrix (:,:)
+            end
+            
+            N = size(obj.mobile_spec_idx,1);
+            IDs = size(subdomain_set,2);
+            
+            u0 = zeros(N+2,IDs);
+            
+            for i=1:IDs
+                u0(1,i) = pressure_set(i);
+                u0(2,i) = temperature_set(i);
+                for j=3:N+2
+                    u0(j,i) = concentration_matrix(j-2,i);
+                end
+                ic = setInitialConditions(obj.model,u0(:,i),"Face",subdomain_set(i));
+            end
+        end
+
+        %% Function to solve the model for a given time span
+        %
+        %       Calling this function will solve the PDE for a set of
+        %       specified time points provided by the user.
+        %
+        %   @param t_span An array of time points to calculate solutions at
+        function results = solve_system(obj, t_span)
+            results = solvepde(obj.model,t_span);
         end
 
         

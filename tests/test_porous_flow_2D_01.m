@@ -89,57 +89,27 @@ obj.set_geometry_from_edges(g);
 
 obj.set_coefficients();
 
-% BC Formats
-%
-%       Dirichlet:  h*u=r
-%
-%       Neumann:    n * (c * grad(u)) = g - q*u
+inbound_set = [3,4];
+velocity_set = [0.005,0.0075];
+temperature_set = [298,298];
+concentration_matrix = [1,0.5];
+obj.set_input_boundaries(inbound_set, velocity_set, ...
+                    temperature_set, concentration_matrix);
 
-% Apply BCs
-% Enter
-he = [0 0 0; 
-     0 1 0; 
-     0 0 1];
-
-re = [0;298;1];
-
-qe = [0 0 0; 
-     0 0 0; 
-     0 0 0];
-
-ge = [0.01;0;0];
-
-applyBoundaryCondition(obj.model,"mixed", ...
-                             "Edge",3, ...
-                             "h",he,"r",re,"q",qe,"g",ge);
-
-
-% exit
-hw = [1 0 0; 
-     0 0 0; 
-     0 0 0];
-
-rw = [101350;0;0];
-
-qw = [0 0 0; 
-      0 0 0; 
-      0 0 0];
-
-gw =  [0; 0; 0];
-
-applyBoundaryCondition(obj.model,"mixed", ...
-                             "Edge",1, ...
-                             "h",hw,"r",rw,"q",qw,"g",gw);
-
+outbound_set = [1];
+pressure_set = [101350];
+obj.set_output_boundaries(outbound_set, pressure_set);
 
 % Set initial conditions 
-u0 = [101350;298;0];
-setInitialConditions(obj.model,u0);
-generateMesh(obj.model);
+subdomain_set = [1];
+pressure_set = [101350];
+temperature_set = [298];
+concentration_matrix = [0];
+obj.set_initial_conditions(subdomain_set,pressure_set,temperature_set, concentration_matrix);
 
-nsteps=10;
+nsteps=20;
 t_span = linspace(0,200,nsteps);
-results = solvepde(obj.model,t_span);
+results = obj.solve_system(t_span);
 u = results.NodalSolution;
 
 f1 = figure;
