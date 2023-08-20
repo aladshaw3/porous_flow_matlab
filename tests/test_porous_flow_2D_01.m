@@ -65,14 +65,7 @@ g = decsg(geom);
 obj = porous_flow_2D(1, 2, 1);
 
 % Set rxn info manually
-% obj.mobile_spec_idx = ones(N,1,subdomains);
-% obj.rxn_stoich = zeros(N,Rxns,subdomains);
-% obj.rxn_powers = zeros(N,Rxns,subdomains);
-% obj.rxn_rate_const = zeros(Rxns,subdomains);
-% obj.rxn_act_energy = zeros(Rxns,subdomains);
-% obj.rxn_enthalpy = zeros(Rxns,subdomains);
-
-obj.rxn_stoich(1,1,1) = -1;
+obj.rxn_stoich(1,1,1) = -1;  %species id, rxn id, subdomain id
 obj.rxn_act_energy(1,1) = 50000;
 obj.rxn_rate_const(1,1) = 5e6;
 obj.rxn_powers(1,1,1) = 1;
@@ -85,7 +78,7 @@ obj.rxn_powers(1,2,1) = 1;
 obj.rxn_enthalpy(2,1) = -1e7;
 
 
-obj.set_geometry_from_edges(g);
+obj.set_geometry_from_edges(g, "quadratic", 0.25);
 
 obj.set_coefficients();
 
@@ -114,7 +107,7 @@ u = results.NodalSolution;
 
 f1 = figure;
 pdeplot(obj.model,"XYData", u(:,1,end),"ZData",u(:,1,end) ,Mesh="on", ColorMap="jet")
-% saveas(f1,'output/Gifs/pressure_test01.png');
+saveas(f1,'output/Gifs/pressure_test01.png');
 close(f1);
 
 % Create gif for temperature

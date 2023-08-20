@@ -133,7 +133,14 @@ classdef porous_flow_2D < handle
         %
         %   Returns: pg = returns formulated geometry to workspace
         %               [optional]
-        function pg = set_geometry_from_edges(obj, geo)
+        function pg = set_geometry_from_edges(obj, geo, order, hmax)
+            % Validate the inputs
+            arguments
+                obj
+                geo
+                order (1,:) {mustBeMember(order,{'quadratic','linear'})} = 'linear'
+                hmax (1,:) {mustBeGreaterThan(hmax,0)} = 0.25
+            end
             pg = geometryFromEdges(obj.model,geo);
 
             % Name,Value options (look up for more info)
@@ -143,7 +150,7 @@ classdef porous_flow_2D < handle
             % "Hface",{[1 2],0.1,[3 4 5],0.05}
             % "Hmin",0.05
             % "Hmax",0.25
-            generateMesh(obj.model);
+            generateMesh(obj.model,"GeometricOrder",order,"Hmax",hmax);
         end
 
         %% Function to set model coefficients based on region
@@ -206,8 +213,8 @@ classdef porous_flow_2D < handle
                 ge(2,i) = coeff*(temperature_set(i));
                 qe(2,2,i) = coeff;
                 for j=3:N+2
-                    ge(j,i) = velocity_set(i)*(concentration_matrix(j-2,i));
-                    qe(j,j,i) = velocity_set(i);
+                    ge(j,i) = velocity_set(i)*(concentration_matrix(j-2,i))*obj.mobile_spec_idx(j-2,1,1);
+                    qe(j,j,i) = velocity_set(i)*obj.mobile_spec_idx(j-2,1,1);
                 end
                 bc = applyBoundaryCondition(obj.model,"mixed", ...
                                              "Edge",boundary_set(i), ...
@@ -382,7 +389,7 @@ classdef porous_flow_2D < handle
             umag = sqrt(ux.^2 + uy.^2 + uz.^2);
             Kw = obj.ThermalConductivityWater(temperature,sub) + ...
                 obj.DensityWater(pressure, temperature, sub) .* ...
-                    obj.SpecificHeatWater(temperature, sub) .* umag.*obj.alpha(1,1,sub)/50;
+                    obj.SpecificHeatWater(temperature, sub) .* umag.*obj.alpha(1,1,sub);
         end
         
         %% Specific heat (Cp) function of water (in J/kg/K)
@@ -425,7 +432,7 @@ classdef porous_flow_2D < handle
                 sub {mustBePositive} = 1
             end
             umag = sqrt(ux.^2 + uy.^2 + uz.^2);
-            D = obj.DiffusionWater(varID, temperature, sub) + umag*obj.alpha(1,1,sub)/50;
+            D = obj.DiffusionWater(varID, temperature, sub) + umag*obj.alpha(1,1,sub);
         end
         
         %% Effective Dispersivity function in water
@@ -512,7 +519,7 @@ classdef porous_flow_2D < handle
             j=1;
             for i=5:2:Nv
                 cmatrix(i,:) = obj.EffectiveDispersionWater(j,state.u(2,:),...
-                        vx,vy,0,sub) * obj.mobile_spec_idx(j,1,sub); % concentration 
+                        vx,vy,0,sub) * (obj.mobile_spec_idx(j,1,sub) + 1e-1); % concentration 
                 cmatrix(i+1,:) = cmatrix(i,:); % concentration 
                 j=j+1;
             end
