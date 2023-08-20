@@ -68,7 +68,7 @@ classdef porous_flow_2D < handle
                 Rxns (1,1) {mustBeNonnegative} = 0
                 subdomains (1,1) {mustBePositive} = 1
             end
-            % Set defaults 
+            % Set defaults (water as carrier fluid)
             obj.bulk_porosity = ones(1,1,subdomains)*0.5;        % -
             obj.particle_diameter = ones(1,1,subdomains)*5e-3;   % m
             obj.muA = ones(1,1,subdomains)*0.02939/1000;         % kg/m/s
@@ -519,7 +519,7 @@ classdef porous_flow_2D < handle
             j=1;
             for i=5:2:Nv
                 cmatrix(i,:) = obj.EffectiveDispersionWater(j,state.u(2,:),...
-                        vx,vy,0,sub) * (obj.mobile_spec_idx(j,1,sub) + 1e-1); % concentration 
+                        vx,vy,0,sub) * (obj.mobile_spec_idx(j,1,sub) + 1e-3); % concentration 
                 cmatrix(i+1,:) = cmatrix(i,:); % concentration 
                 j=j+1;
             end

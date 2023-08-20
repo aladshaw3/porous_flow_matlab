@@ -44,13 +44,30 @@ $$ r_j = k_j \cdot exp( - \frac{E_j}{R T} ) \cdot \prod{C_l^{s_l}} $$
 
  - Mobility term
 
-If species is mobile...
+> If species is mobile...
 
 $$ \delta_i = 1 $$
 
-Otherwise...
+> Otherwise...
 
 $$ \delta_i = 0 $$
+
+# Examples
+
+All examples discussed have their source code under the `tests` directory.
+
+ ## (1) Basic Usage
+
+
+---
+
+ ## (2) Injection well and Draw well
+
+---
+
+ ## (3) Multi-domain Properties and Chemical Breakthrough
+
+---
 
 # Citation 
 
