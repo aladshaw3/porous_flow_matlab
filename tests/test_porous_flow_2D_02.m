@@ -32,7 +32,6 @@ obj = porous_flow_2D(2, 2, 1);
 
 % Set geometry based on edges and setup functions
 obj.set_geometry_from_edges(g,"linear",0.25);
-obj.set_coefficients();
 
 
 % Set up reaction parameters
@@ -51,6 +50,8 @@ obj.rxn_stoich(2,1,1) = 1; %species id, rxn id, subdomain id
 obj.rxn_stoich(2,2,1) = -1; %species id, rxn id, subdomain id
 obj.mobile_spec_idx(2,1,1) = 0; % 2nd species is immobile 
 
+% Call this before setting BCs, but after setting parameters
+obj.set_coefficients();
 
 % Setup input BCs
 %       5,6,7,8 - Injection of stuff
@@ -113,7 +114,7 @@ output2 = create_gif(command_set,variable_set,index_limit,1,'temp_solution_test0
 first_command = 'pdeplot(model,"XYData",u(:,3,INDEX),"ZData",u(:,3,INDEX),"ZStyle","continuous",ColorMap="jet");';
 command_set = [first_command,'umax = max(max(u(:,3,:)));','umin = min(min(u(:,3,:)));',...
                 'axis([-10 15 -15 10 umin umax]);','clim([umin umax]);',...
-                'xlabel x;','ylabel y;','zlabel C;'];
+                'xlabel x;','ylabel y;','zlabel C_A;'];
 
 variable_set = cell(2,2);
 variable_set{1,1} = 'u';
@@ -129,7 +130,7 @@ output3 = create_gif(command_set,variable_set,index_limit,1,'conc_solution_test0
 first_command = 'pdeplot(model,"XYData",u(:,4,INDEX),"ZData",u(:,4,INDEX),"ZStyle","continuous",ColorMap="jet");';
 command_set = [first_command,'umax = max(max(u(:,4,:)));','umin = min(min(u(:,4,:)));',...
                 'axis([-10 15 -15 10 umin umax]);','clim([umin umax]);',...
-                'xlabel x;','ylabel y;','zlabel C;'];
+                'xlabel x;','ylabel y;','zlabel C_B;'];
 
 variable_set = cell(2,2);
 variable_set{1,1} = 'u';
