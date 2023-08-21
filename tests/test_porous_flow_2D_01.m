@@ -64,6 +64,8 @@ g = decsg(geom);
 
 obj = porous_flow_2D(1, 2, 1);
 
+obj.set_geometry_from_edges(g, "quadratic", 0.25);
+
 % Set rxn info manually
 obj.rxn_stoich(1,1,1) = -1;  %species id, rxn id, subdomain id
 obj.rxn_act_energy(1,1) = 50000;
@@ -76,9 +78,6 @@ obj.rxn_act_energy(2,1) = 50000;
 obj.rxn_rate_const(2,1) = 5e6;
 obj.rxn_powers(1,2,1) = 1;
 obj.rxn_enthalpy(2,1) = -1e7;
-
-
-obj.set_geometry_from_edges(g, "quadratic", 0.25);
 
 % Call this before setting BCs, but after setting parameters
 obj.set_coefficients();
