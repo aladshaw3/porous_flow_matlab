@@ -263,7 +263,7 @@ well where warm saline water is being added. Not too far way, located at point
 saline water is being injected at. This causes a high pressure zone at (5,0)
 and a low pressure zone at (-5,0).
 
-![Fig4](output/Gifs/pressure_solution_test02_injection_well.png?raw=true)
+![Fig4](output/Gifs/pressure_test02_injection_well.png?raw=true)
 
 **Figure 4**: Pressure distribution from wells (Pa)
 
