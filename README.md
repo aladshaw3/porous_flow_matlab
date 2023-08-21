@@ -58,6 +58,9 @@ All examples discussed have their source code under the `tests` directory.
 
  ## (1) Basic Usage
 
+![Fig1](output/Gifs/pressure_test01.png?raw=true)
+
+![Fig2](output/Gifs/temp_solution_test01.gif?raw=true)
 
 ---
 
