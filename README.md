@@ -58,9 +58,11 @@ All examples discussed have their source code under the `tests` directory.
 
  ## (1) Basic Usage
 
-![Fig1](output/Gifs/pressure_test01.png | width=100)
+<div style="width:60px ; height:60px">
+![Fig1](output/Gifs/pressure_test01.png?raw=true)
+<div>
 
-![Fig2](output/Gifs/temp_solution_test01.gif | width=100)
+![Fig2](output/Gifs/temp_solution_test01.gif?raw=true)
 
 ---
 
