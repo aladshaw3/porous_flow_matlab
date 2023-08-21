@@ -49,6 +49,18 @@ $$ \delta_i = 1 $$
 
 $$ \delta_i = 0 $$
 
+
+# Other tools
+
+This repo also contains a generalized set of utilies for creating gifs.
+
+ - `gif.m`   (Edited from the [Original by Chad Greene](https://www.mathworks.com/matlabcentral/fileexchange/63239-gif))
+ - `create_gif.m`   (Creates gifs from a set of user defined commands)
+
+These were used to create the example results shown below. See the `tests` 
+directory for example usage.
+
+
 # Examples
 
 All examples discussed have their source code under the `tests` directory.
@@ -342,22 +354,173 @@ well, that the water immediately adjacent to the injection well begins to heat.
 
 At the same time we see an increase in the salt content of the water immediately
 adjacent to the well, as well as the formation of some of our immobile species.
+This formation of immobile species also limits the distribution of the saline 
+solution further from the point of injection.
 
 ![Fig6](output/Gifs/conc_solution_test02_CA_injection_well.gif?raw=true)
 
 **Figure 6**: Concentration of mobile saline species A (mol/m^3)
 
-This formation of immobile species also limits the distribution of the saline 
-solution further from the point of injection.
-
-![Fig7](output/Gifs/conc_solution_test02_CB_injection_well.gif?raw=true)
-
-**Figure 7**: Concentration of immobile saline species B (mol/m^3)
-
 
 ---
 
  ## (3) Multi-domain Properties and Chemical Breakthrough
+
+This last example was used to demonstrate how you can setup material properties and 
+parameters in a system that has multiple subdomains with different properties. It also
+demonstrates how to create different types of plots to look at things like chemical 
+breakthrough or distribution of chemicals across a domain. 
+
+### Problem setup
+
+In this example, we will have a simple rectangular domain, but that full domain 
+is composed of to different "Faces" that will represent 2 subdomains, each with 
+different material properties.
+
+![Fig7](output/Gifs/pressure_test03_subdomains.png?raw=true)
+
+**Figure 7**: Image of the subdomains
+
+### Distribution of properties and reactions
+
+In this example, not only are the material properties different with subdomain, 
+but also our set of reactions will be different in each subdomain. This is actually
+fairly common in catalysis applications for engineered chemical treatment systems.
+
+```
+% Create instance of PDE object 
+%     4 chemical species, 4 reactions, 2 subdomains
+obj = porous_flow_2D(4, 4, 2);
+
+% Set geometry based on edges and setup functions
+obj.set_geometry_from_edges(g,"linear",0.005);
+
+% Set up reaction parameters: r1 --> A & B in Sub01
+obj.rxn_stoich(1,1,1) = -1; %species id, rxn id, subdomain id
+obj.rxn_act_energy(1,1) = 25000; % rxn id, subdomain id
+obj.rxn_rate_const(1,1) = 1e3;
+obj.rxn_powers(1,1,1) = 1;
+obj.rxn_enthalpy(1,1) = -5e7;
+obj.rxn_stoich(2,1,1) = 1; %species id, rxn id, subdomain id
+
+% Set up reaction parameters: r2 --> B & C in Sub01
+obj.rxn_stoich(2,2,1) = -1; %species id, rxn id, subdomain id
+obj.rxn_act_energy(2,1) = 55000; % rxn id, subdomain id
+obj.rxn_rate_const(2,1) = 1e8;
+obj.rxn_powers(2,2,1) = 1;
+obj.rxn_enthalpy(2,1) = 3e3;
+obj.rxn_stoich(3,2,1) = 1; %species id, rxn id, subdomain id
+
+% Set up reaction parameters: r3 --> C & D in Sub02
+obj.rxn_stoich(3,3,2) = -1; %species id, rxn id, subdomain id
+obj.rxn_act_energy(3,2) = 15000; % rxn id, subdomain id
+obj.rxn_rate_const(3,2) = 5e1;
+obj.rxn_powers(3,3,2) = 1;
+obj.rxn_enthalpy(3,2) = 2e7;
+obj.rxn_stoich(4,3,2) = 1; %species id, rxn id, subdomain id
+
+% Set up reaction parameters: r4 --> D & C in Sub02
+obj.rxn_stoich(4,4,2) = -1; %species id, rxn id, subdomain id
+obj.rxn_act_energy(4,2) = 75000; % rxn id, subdomain id
+obj.rxn_rate_const(4,2) = 1e3;
+obj.rxn_powers(4,4,2) = 1;
+obj.rxn_enthalpy(4,2) = -5e3;
+obj.rxn_stoich(3,4,2) = 1; %species id, rxn id, subdomain id
+
+obj.mobile_spec_idx(2,1,1) = 0; % B species is immobile in sub01
+obj.mobile_spec_idx(2,1,2) = 0; % B species is immobile in sub02
+obj.mobile_spec_idx(4,1,1) = 0; % D species is immobile in sub01
+obj.mobile_spec_idx(4,1,2) = 0; % D species is immobile in sub02
+
+
+% Setup subdomain physical constants
+%       The 3rd index is the subdomain index
+obj.bulk_porosity(1,1,1) = 0.33;
+obj.bulk_porosity(1,1,2) = 0.45;
+obj.particle_diameter(1,1,1) = 4e-3;
+obj.particle_diameter(1,1,2) = 6e-3;
+obj.char_len = obj.particle_diameter;
+obj.bulk_solids_dens(1,1,1) = 2100;
+obj.bulk_solids_dens(1,1,2) = 2500;
+obj.bulk_solids_Cp(1,1,1) = 1.715e3;
+obj.bulk_solids_Cp(1,1,2) = 1.115e3;
+
+
+% Call this before setting BCs, but after setting parameters
+obj.set_coefficients();
+```
+
+This distribution of physical parameters has a big impact on the pressure 
+distribution in the system (see below).
+
+![Fig8](output/Gifs/pressure_test03_multidomain.png?raw=true)
+
+**Figure 8**: Pressure distribution (Pa)
+
+The first subdomain undergoes much higher pressure drop because it is composed
+of much smaller particles and has much less void space. Thus, it is necessary
+to apply more pressure here to get the same fluid flow rate as in the second domain.
+
+
+### Setting ICs for each subdomain
+
+We will call the same ICs function from before, but this time we need to set 
+the initial conditions for each subdomain. In this example, we set the same 
+initial conditions regardless of subdomain, but you can use this same function 
+call to set different ICs for each subdomain.
+
+```
+% Set initial conditions (for each subdomain)
+subdomain_set = [1,2];
+pressure_set = [101350,101350];
+temperature_set = [298,298];
+concentration_matrix = [0.0, 0.0;
+                        0.0, 0.0;
+                        0.0, 0.0;
+                        0.0, 0.0];  % NxID (4x2)
+obj.set_initial_conditions(subdomain_set,pressure_set,temperature_set, concentration_matrix);
+```
+
+### Example 3 - Results
+
+Because species B and D are immobile, and formed in different domains, we see 
+that they will generally not be found in the other domain. However, since this
+is a FEM, there is some "diffusion" of these species between subdomains. This 
+could be thought of as a "surface diffusion" between subdomains. 
+
+![Fig9](output/Gifs/conc_solution_test03_CB_multidomain.gif?raw=true)
+
+**Figure 9**: Concentration of immobile species B (mol/m^3)
+
+![Fig10](output/Gifs/conc_solution_test03_CD_multidomain.gif?raw=true)
+
+**Figure 10**: Concentration of immobile species D (mol/m^3)
+
+**NOTE**: This minor amount of "surface diffusion" is unavoidable in the Matlab
+PDE toolbox because we cannot fully "isolate" variables from a given subdomain 
+in the Matlab toolbox. 
+
+We can use the [NodalSolution](https://www.mathworks.com/help/pde/ug/pde.timedependentresults.html)
+on output of the simulation, along with the [interpolateSolution](https://www.mathworks.com/help/pde/ug/pde.stationaryresults.interpolatesolution.html)
+function in Matlab to generate plots for:
+
+ - Breakthrough of mobile species at exit overtime 
+
+
+![Fig11](output/Gifs/breakthrough_conc_test03_multidomain.png?raw=true)
+
+**Figure 11**: Concentrations of A and C at the exit of the domain overtime
+
+
+ - Concentration distribution of all chemicals along simulation axis
+
+
+![Fig12](output/Gifs/steadystate_profile_conc_test03_multidomain.png?raw=true)
+
+**Figure 12**: Concentrations of all species along x-axis at end of simulation
+
+
+**NOTE**: For source code examples and further explanation, see files under `tests` folder. 
 
 ---
 
