@@ -42,7 +42,7 @@ obj.rxn_act_energy(2,1) = 55000; % rxn id, subdomain id
 obj.rxn_rate_const(1,1) = 1e2;
 obj.rxn_rate_const(2,1) = 1e-2;
 obj.rxn_powers(1,1,1) = 1;
-obj.rxn_powers(1,2,1) = 0;
+obj.rxn_powers(2,2,1) = 1;
 obj.rxn_enthalpy(1,1) = -0.5e6;
 obj.rxn_enthalpy(2,1) = 0.5e7;
 
